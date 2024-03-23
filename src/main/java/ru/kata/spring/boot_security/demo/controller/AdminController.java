@@ -17,6 +17,7 @@ import ru.kata.spring.boot_security.demo.model.Role;
 import ru.kata.spring.boot_security.demo.model.User;
 import ru.kata.spring.boot_security.demo.repository.RoleRepository;
 import ru.kata.spring.boot_security.demo.repository.UserRepository;
+import ru.kata.spring.boot_security.demo.service.RoleService;
 import ru.kata.spring.boot_security.demo.service.UserService;
 
 import java.security.Principal;
@@ -25,14 +26,16 @@ import java.util.List;
 @Controller
 @RequestMapping("/admin")
 public class AdminController {
-    private final RoleRepository roleRepository;
+
     private final UserService userService;
     private final UserRepository userRepository;
+    private final RoleService roleService;
 
-    public AdminController(RoleRepository roleRepository, UserService userService, UserRepository userRepository) {
-        this.roleRepository = roleRepository;
+    public AdminController(UserService userService, UserRepository userRepository, RoleService roleService) {
+
         this.userService = userService;
         this.userRepository = userRepository;
+        this.roleService = roleService;
     }
 
     @GetMapping("")
@@ -40,8 +43,8 @@ public class AdminController {
         String username = principal.getName();
         model.addAttribute("users", userService.findAll());
         model.addAttribute("username", principal.getName());
-        model.addAttribute("user", userRepository.findByUsername(principal.getName()).get());
-        model.addAttribute("allRoles", roleRepository.findAll());
+        model.addAttribute("user", userRepository.findByUsername(principal.getName()).orElseThrow());
+        model.addAttribute("allRoles", roleService.getAllRole());
         model.addAttribute("newUser", new User());
         return "indexSpringMvc";
     }
@@ -51,7 +54,7 @@ public class AdminController {
         User user = new User();
         String username = principal.getName();
         model.addAttribute("user", user);
-        List<Role> roles = (List<Role>) roleRepository.findAll();
+        List<Role> roles = roleService.getAllRole();
         model.addAttribute("username", username);
         model.addAttribute("allRoles", roles);
         return "addUserField";
@@ -60,7 +63,7 @@ public class AdminController {
     @PatchMapping("/addOrUpdate/{id}")
     public String add(@PathVariable("id") Long id, @Valid @ModelAttribute("user") User user, BindingResult bindingResult, Model model) {
         if (bindingResult.hasErrors()) {
-            List<Role> roles = (List<Role>) roleRepository.findAll();
+            List<Role> roles = roleService.getAllRole();
             model.addAttribute("allRoles", roles);
             return "addUserField";
         } else {
@@ -85,13 +88,12 @@ public class AdminController {
 
     @GetMapping("/updateUser")
     public String updateUser(@ModelAttribute("id") Long id, Model model) {
-        User user = userService.findById(id).get();
+        User user = userService.findById(id).orElseThrow();
         model.addAttribute("user", user);
-        List<Role> roles = (List<Role>) roleRepository.findAll();
+        List<Role> roles = roleService.getAllRole();
         model.addAttribute("allRoles", roles);
         return "editPage";
     }
-
 
 
 }
